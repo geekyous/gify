@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.9（2026-10） |
+| 版本 | v1.10（2026-10） |
 | 形态 | 内网部署的轻量 AI Agent 平台 |
 | 开发 | 单人开发 |
 | 用户 | 20–50 人团队，内网环境 |
@@ -419,7 +419,7 @@ Agent 负责人的主要工作界面，完成 Agent 从创建到发布生效的�
 | token 估算 | tiktoken | API 未返回 usage 时降级估算 |
 | 后台任务 | arq | RAG 摄取管道：解析 → 分块 → 嵌入 → 入库 |
 
-部署：Docker Compose 三容器（app、PostgreSQL、Redis）；前端构建产物由 app 容器静态托管，不设独立 nginx；升级流程含数据迁移（Alembic）。
+部署：Docker Compose 三容器（app、PostgreSQL、Redis）；前端独立部署，与 API 不同源，跨域经 CORS 白名单（`CORS_ORIGINS` 配置项）放行，会话凭证随跨域请求携带；升级流程含数据迁移（Alembic）。
 
 ### 5.5 开发节奏约束
 

@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.4（2026-10） |
+| 版本 | v1.5（2026-10） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -223,7 +223,7 @@ backend/app/
 
 ### 5.1 认证与会话
 
-1. 会话 cookie：`HttpOnly`；`SameSite=Lax`；生产环境 `Secure`；`Path=/`。
+1. 会话 cookie：`HttpOnly`；`SameSite` 默认 `Lax`（适用于前后端同注册域、跨端口 / 子域的部署形态；前后端跨注册域时需调整为 `None` 且强制 `Secure`）；生产环境 `Secure`；`Path=/`。
 2. session 存 Redis，键含用户与状态；每次请求校验用户 `enabled`，禁用即时失效。
 3. 会话空闲过期 7 天（滑动续期）。
 4. 登录接口防爆破：同一用户名连续失败 5 次锁定 10 分钟（Redis 计数）。
@@ -248,9 +248,10 @@ backend/app/
 
 ### 5.5 接口防护
 
-1. CORS 默认关闭（前端由 app 容器同源托管）；确需放开时按部署文档配置白名单。
-2. 上传（M2）：单文件 ≤ 20MB，扩展名白名单（txt / md / pdf / docx），文件名不信任。
-3. 分享页 token 用密码学安全随机数生成（URL-safe 编码，≥ 32 字节熵），关闭分享立即失效。
+1. CORS 白名单放行：生产环境前端与 API 不同源。允许的前端来源由配置项 `CORS_ORIGINS` 指定（逗号分隔的完整 origin，含协议与端口），白名单外来源不放行。
+2. 跨域凭证：会话 cookie 依赖 `Access-Control-Allow-Credentials`，因此 `Allow-Origin` 必须为精确值，禁止通配 `*`。
+3. 上传（M2）：单文件 ≤ 20MB，扩展名白名单（txt / md / pdf / docx），文件名不信任。
+4. 分享页 token 用密码学安全随机数生成（URL-safe 编码，≥ 32 字节熵），关闭分享立即失效。
 
 ## 6. 日志规范
 
@@ -297,7 +298,7 @@ frontend/src/
 
 ### 7.4 接口调用
 
-1. HTTP 客户端单例在 `src/api/request.ts`：`baseURL '/api'`、`withCredentials`。
+1. HTTP 客户端单例在 `src/api/request.ts`：`baseURL '/api'`，请求统一携带凭证（credentials: include，同源与跨域形态通用）。
 2. 响应拦截器统一解包：HTTP 401 跳登录页；`code !== 0` 时以 `message` 弹出（ElMessage）并 reject；`code === 0` 时直接向调用方返回 `data`；网络错误统一提示。
 3. 每个接口函数标注返回类型，类型定义与后端模型字段一一对应（camelCase）。
 4. 组件禁止直接使用 HTTP 客户端。
