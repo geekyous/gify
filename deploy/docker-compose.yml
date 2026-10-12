@@ -4,6 +4,10 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
     env_file: .env
+    environment:
+      # 容器内经 compose 网络访问，覆盖 .env 中的 localhost 地址
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-gify}:${POSTGRES_PASSWORD:-gify}@postgres:5432/${POSTGRES_DB:-gify}
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:
@@ -11,6 +15,22 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/frontend.Dockerfile
+      args:
+        # 构建时注入 API 基址（浏览器可达的 API 入口）
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
     restart: unless-stopped
 
   postgres:
@@ -29,16 +49,20 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
-  
+
   redis:
     image: redis:7-alpine
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
 volumes:
   pg_data:
   redis_data:
-
