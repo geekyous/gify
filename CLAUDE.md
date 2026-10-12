@@ -13,7 +13,8 @@
 
 - 后端：Python 3.12 + FastAPI + SQLAlchemy 2.0（async）+ Alembic，uv 管理依赖
 - 前端：Vue 3 + TypeScript + Vite + Element Plus + Pinia
-- 数据：PostgreSQL 16（pgvector 镜像）+ Redis 7；部署 Compose 三容器（`deploy/`）
+- 数据：PostgreSQL 16（pgvector 镜像）+ Redis 7；部署 Compose 四容器：app（API）、nginx（前端静态）、postgres、redis（`deploy/`）
+- 前端与 API 跨域：生产构建注入 `VITE_API_BASE_URL`，后端 CORS 白名单 `CORS_ORIGINS` 放行
 
 ## 关键约定
 

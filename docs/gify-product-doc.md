@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.10（2026-10） |
+| 版本 | v1.11（2026-10） |
 | 形态 | 内网部署的轻量 AI Agent 平台 |
 | 开发 | 单人开发 |
 | 用户 | 20–50 人团队，内网环境 |
@@ -101,8 +101,8 @@ Gify 是部署在内网的轻量 AI Agent 平台：管理员注册模型服务�
 
 **功能要求**
 
-1. `docker-compose.yml` 包含三个容器：app、PostgreSQL（含 pgvector 扩展）、Redis。
-2. `.env` 配置端口、密钥、初始管理员账号。
+1. `docker-compose.yml` 包含四个容器：app（API）、nginx（前端静态托管，与 API 跨域）、PostgreSQL（含 pgvector 扩展）、Redis。
+2. `.env` 配置端口、密钥、初始管理员账号、CORS 白名单与前端注入的 API 地址（`VITE_API_BASE_URL`）。
 3. 升级流程：拉取新镜像 + 执行 `migrate` 脚本（数据迁移）；升级前提示备份（`pg_dump` + volumes）。
 4. 系统日志结构化输出到 stdout，通过 `docker compose logs` 查看，不做日志检索界面。
 
@@ -419,7 +419,7 @@ Agent 负责人的主要工作界面，完成 Agent 从创建到发布生效的�
 | token 估算 | tiktoken | API 未返回 usage 时降级估算 |
 | 后台任务 | arq | RAG 摄取管道：解析 → 分块 → 嵌入 → 入库 |
 
-部署：Docker Compose 三容器（app、PostgreSQL、Redis）；前端独立部署，与 API 不同源，跨域经 CORS 白名单（`CORS_ORIGINS` 配置项）放行，会话凭证随跨域请求携带；升级流程含数据迁移（Alembic）。
+部署：Docker Compose 四容器（app、nginx、PostgreSQL、Redis）；前端由独立 nginx 容器托管，与 API 跨域，构建时注入 `VITE_API_BASE_URL`，后端经 CORS 白名单（`CORS_ORIGINS`）放行，会话凭证随跨域请求携带；升级流程含数据迁移（Alembic）。
 
 ### 5.5 开发节奏约束
 

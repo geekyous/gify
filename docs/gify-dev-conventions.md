@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.5（2026-10） |
+| 版本 | v1.6（2026-10） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -298,7 +298,7 @@ frontend/src/
 
 ### 7.4 接口调用
 
-1. HTTP 客户端单例在 `src/api/request.ts`：`baseURL '/api'`，请求统一携带凭证（credentials: include，同源与跨域形态通用）。
+1. HTTP 客户端单例在 `src/api/request.ts`：API 基址由构建环境注入 `VITE_API_BASE_URL`（开发默认空，走 Vite 代理；生产构建时注入 API 对外地址），统一拼接 `/api` 前缀；请求统一携带凭证（credentials: include，同源与跨域形态通用）。
 2. 响应拦截器统一解包：HTTP 401 跳登录页；`code !== 0` 时以 `message` 弹出（ElMessage）并 reject；`code === 0` 时直接向调用方返回 `data`；网络错误统一提示。
 3. 每个接口函数标注返回类型，类型定义与后端模型字段一一对应（camelCase）。
 4. 组件禁止直接使用 HTTP 客户端。
