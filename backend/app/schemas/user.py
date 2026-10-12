@@ -1,6 +1,7 @@
 """用户管理请求 / 响应模型（管理员）。"""
 
 import uuid
+from datetime import datetime
 from typing import Literal
 
 from pydantic import Field
@@ -17,6 +18,7 @@ class UserOut(CamelModel):
     role: str
     enabled: bool
     must_change_password: bool
+    created_at: datetime
 
 
 class UserCreateOut(UserOut):
