@@ -26,8 +26,8 @@ async def login(
         sid,
         max_age=settings.session_ttl_seconds,
         httponly=True,
-        samesite="lax",
-        secure=settings.env == "prod",
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
         path="/",
     )
     return Envelope.ok(SessionUser.model_validate(user))

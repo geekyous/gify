@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
@@ -55,6 +56,18 @@ async def request_context(request: Request, call_next):
         },
     )
     return response
+
+
+# CORS 白名单放行（开发规范 5.5）：生产前端与 API 不同源，凭证依赖精确 Allow-Origin
+# 放在 request_context 之后注册，使其位于最外层，错误响应同样携带 CORS 头
+_settings = get_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_settings.cors_origin_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(errors.AppError)

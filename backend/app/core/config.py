@@ -19,12 +19,27 @@ class Settings(BaseSettings):
     redis_url: str
     secret_key: str
 
+    # CORS 允许的前端来源（开发规范 5.5.1）：逗号分隔的完整 origin，含协议与端口
+    cors_origins: str = "http://localhost:5173"
+    # SameSite 默认 Lax；前后端跨注册域部署时调整为 none（强制 Secure，需 HTTPS）
+    cookie_samesite: Literal["lax", "none", "strict"] = "lax"
+
     init_admin_username: str = "admin"
     init_admin_password: str = "change-on-first-login"
 
     session_ttl_seconds: int = 7 * 24 * 3600
     login_max_attempts: int = 5
     login_lock_seconds: int = 600
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [
+            origin.strip() for origin in self.cors_origins.split(",") if origin.strip()
+        ]
+
+    @property
+    def cookie_secure(self) -> bool:
+        return self.env == "prod" or self.cookie_samesite == "none"
 
 
 @lru_cache
