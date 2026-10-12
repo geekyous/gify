@@ -6,6 +6,9 @@
  */
 import { ElMessage } from 'element-plus'
 
+// API 基址：开发默认空（走 Vite 代理）；生产构建时由 VITE_API_BASE_URL 注入
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
 export class ApiError extends Error {
   code: number
   fieldErrors: Record<string, string> | null
@@ -26,7 +29,7 @@ interface Envelope<T> {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let resp: Response
   try {
-    resp = await fetch(`/api${path}`, {
+    resp = await fetch(`${API_BASE}/api${path}`, {
       method,
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       credentials: 'include',
