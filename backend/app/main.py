@@ -11,13 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
-from app.api import auth, users
 from app.core import errors, security, session_store
 from app.core.config import get_settings
 from app.core.logging import get_logger, setup_logging
+from app.core.schemas import Envelope
 from app.db import provide_session
-from app.models.user import User
-from app.schemas.base import Envelope
+from app.identity import api as identity_api
+from app.identity.models import User
 
 setup_logging()
 logger = get_logger(__name__)
@@ -115,8 +115,8 @@ async def unhandled_error_handler(request: Request, exc: Exception) -> JSONRespo
     )
 
 
-app.include_router(auth.router)
-app.include_router(users.router)
+app.include_router(identity_api.auth_router)
+app.include_router(identity_api.users_router)
 
 
 @app.get("/api/health")

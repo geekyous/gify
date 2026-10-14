@@ -1,4 +1,4 @@
-"""数据库 engine 与 session 工厂（SQLAlchemy 2.0 async）。"""
+"""数据库 engine、session 工厂与 ORM 公共基类（SQLAlchemy 2.0 async）。"""
 
 from collections.abc import AsyncGenerator
 
@@ -8,8 +8,14 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
+
+
+class Base(DeclarativeBase):
+    """全部模块 ORM 模型的公共基类。"""
+
 
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None

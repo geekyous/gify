@@ -1,4 +1,4 @@
-"""用户管理业务逻辑（FR-01 功能要求 5）。"""
+"""identity 模块业务逻辑：认证（登录、登出、修改密码）与用户管理（FR-01）。"""
 
 import uuid
 from typing import Any
@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import errors, security, session_store
 from app.core.logging import get_logger
-from app.models.user import User
-from app.schemas.user import UserCreateIn, UserUpdateIn
+from app.identity.models import User
+from app.identity.schemas import UserCreateIn, UserUpdateIn
 
 logger = get_logger(__name__)
 
@@ -23,6 +23,9 @@ ORDERABLE_COLUMNS: dict[str, Any] = {
 }
 
 
+# ---- 查询 ----
+
+
 async def get_by_username(db: AsyncSession, username: str) -> User | None:
     result = await db.scalars(select(User).where(User.username == username))
     return result.first()
@@ -33,6 +36,86 @@ async def get_by_id(db: AsyncSession, user_id: uuid.UUID) -> User:
     if user is None:
         raise errors.err(errors.USER_NOT_FOUND)
     return user
+
+
+# ---- 认证 ----
+
+
+async def login(
+    db: AsyncSession, redis: Redis, username: str, password: str
+) -> tuple[User, str]:
+    """校验口令并创建会话。锁定检查在最前，不泄露口令正误。"""
+    if await session_store.is_login_locked(redis, username):
+        logger.info(
+            "登录拒绝（锁定中）",
+            extra_fields={"event": "auth.login_locked", "username": username},
+        )
+        raise errors.err(errors.AUTH_LOGIN_LOCKED)
+
+    user = await get_by_username(db, username)
+    if user is None or not security.verify_password(password, user.password_hash):
+        attempts = await session_store.register_login_failure(redis, username)
+        logger.info(
+            "登录失败",
+            extra_fields={
+                "event": "auth.login_failed",
+                "username": username,
+                "attempts": attempts,
+            },
+        )
+        raise errors.err(errors.AUTH_INVALID_CREDENTIALS)
+
+    if not user.enabled:
+        logger.info(
+            "登录拒绝（已禁用）",
+            extra_fields={"event": "auth.login_disabled", "username": username},
+        )
+        raise errors.err(errors.AUTH_USER_DISABLED)
+
+    await session_store.clear_login_failures(redis, username)
+    sid = await session_store.create_session(redis, user.id)
+    logger.info(
+        "登录成功",
+        extra_fields={
+            "event": "auth.login",
+            "userId": str(user.id),
+            "username": username,
+        },
+    )
+    return user, sid
+
+
+async def logout(redis: Redis, sid: str, user_id: uuid.UUID) -> None:
+    await session_store.destroy_session(redis, sid, user_id)
+    logger.info("登出", extra_fields={"event": "auth.logout", "userId": str(user_id)})
+
+
+async def change_password(
+    db: AsyncSession,
+    redis: Redis,
+    user: User,
+    old_password: str,
+    new_password: str,
+) -> None:
+    """修改密码后销毁该用户全部会话，要求重新登录（含首登强制改密场景）。"""
+    if not security.verify_password(old_password, user.password_hash):
+        raise errors.err(errors.AUTH_OLD_PASSWORD_MISMATCH)
+    await db.execute(
+        update(User)
+        .where(User.id == user.id)
+        .values(
+            password_hash=security.hash_password(new_password),
+            must_change_password=False,
+        )
+    )
+    await session_store.destroy_user_sessions(redis, user.id)
+    logger.info(
+        "密码修改",
+        extra_fields={"event": "user.password_change", "userId": str(user.id)},
+    )
+
+
+# ---- 用户管理 ----
 
 
 async def list_users(

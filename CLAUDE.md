@@ -12,7 +12,8 @@
 ## 目录结构
 
 ```
-backend/     FastAPI：app/{core,api,schemas,models,services}、alembic/、tests/
+backend/     FastAPI 模块化单体：app/core 公共层 + 按域模块（identity、providers、
+             engine、kb、tools、agents、chat、usage）、alembic/、tests/
 frontend/    Vue 3：src/{api,stores,router,layouts,views,components,utils}
 deploy/      Compose 四容器：Dockerfile（app）、frontend.Dockerfile、nginx.conf、
              docker-compose.yml、migrate.sh、upgrade.sh、.env.example、README.md
@@ -63,6 +64,7 @@ sh upgrade.sh                  # 备份提示 → 构建镜像 → 迁移 → �
 
 ## 高频规范（完整以开发规范为准）
 
+- 后端为领域模块化单体：模块间只 import 对方 service 公开函数，禁止摸对方 api/schemas/models 内部；core 是唯一公共层，不依赖任何模块
 - 路由层只做参数校验、权限检查、调用 service、组装响应；业务逻辑与数据访问在 service 层
 - 接口统一信封 `{code, message, data}`；错误码集中登记在 `backend/app/core/errors.py`，禁止裸数字、裸 dict 返回、直接 raise `HTTPException`
 - JSON 字段 camelCase（Pydantic alias 转换），业务代码内部 snake_case

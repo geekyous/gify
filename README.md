@@ -98,7 +98,8 @@ cd frontend && npm run lint && npm run build         # lint + 构建（含类型
 ## 项目结构
 
 ```
-backend/     FastAPI：app/{core,api,schemas,models,services}、alembic/、tests/
+backend/     FastAPI 模块化单体：app/ 按业务域分模块（identity、providers、engine、
+             kb、tools、agents、chat、usage），core 为公共层
 frontend/    Vue 3：src/{api,stores,router,layouts,views,components,utils}
 deploy/      Compose 四容器：Dockerfile（app）、frontend.Dockerfile、nginx.conf、
              docker-compose.yml、migrate.sh、upgrade.sh、.env.example

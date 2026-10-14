@@ -27,7 +27,7 @@ from sqlalchemy.pool import NullPool
 
 from alembic import command
 from app.core.security import hash_password
-from app.models.user import User
+from app.identity.models import User
 
 INITIAL_ADMIN = ("admin", "change-on-first-login")
 
