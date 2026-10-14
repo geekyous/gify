@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.7（2026-10） |
+| 版本 | v1.8（2026-10） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -145,14 +145,15 @@ app/<module>/
 └── *_client.py    # 外部系统调用收口（按需，如 openai_client.py）
 ```
 
-1. 模块间只允许 import 对方 `service` 的公开函数，禁止 import 对方 api / schemas / models / client 内部；`core` 是唯一公共层，不依赖任何模块。
-2. 路由层只做：参数校验、权限检查、调用 service、组装响应。禁止在路由层写业务逻辑、直接操作数据库。
-3. service 层承载业务逻辑与数据访问，函数式模块（模块内普通函数，不用类）。
-4. service 层的创建 / 更新 / 删除操作必须调用统一审计入口（`core/audit`）。
-5. ORM 模型只描述数据结构，不含业务方法。
-6. 依赖注入统一 FastAPI `Depends`：session、当前用户、角色检查均以依赖提供。
-7. 外部系统调用（模型服务、MCP Server、出网 HTTP）在所属模块的 client 文件收口：超时与重试策略、密钥处理、出向日志只在 client 层出现；client 不 import 任何 service。
-8. engine 模块不依赖 FastAPI 请求上下文，可被 API、后台任务、脚本三种入口调用（需求文档 5.2）。
+1. 模块间只允许 import 对方 `service` 的公开函数与 `deps` 中的鉴权依赖（当前用户、角色检查），禁止 import 对方 api / schemas / models / client 内部；`core` 是唯一公共层，不依赖任何模块。
+2. 跨模块外键以表名字符串声明（`ForeignKey("users.id")`），不 import 对方模型；展示名称经对方 service 查询。
+3. 路由层只做：参数校验、权限检查、调用 service、组装响应。禁止在路由层写业务逻辑、直接操作数据库。
+4. service 层承载业务逻辑与数据访问，函数式模块（模块内普通函数，不用类）。
+5. service 层的创建 / 更新 / 删除操作必须调用统一审计入口（`core/audit`）。
+6. ORM 模型只描述数据结构，不含业务方法。
+7. 依赖注入统一 FastAPI `Depends`：session、当前用户、角色检查均以依赖提供。
+8. 外部系统调用（模型服务、MCP Server、出网 HTTP）在所属模块的 client 文件收口：超时与重试策略、密钥处理、出向日志只在 client 层出现；client 不 import 任何 service。
+9. engine 模块不依赖 FastAPI 请求上下文，可被 API、后台任务、脚本三种入口调用（需求文档 5.2）。
 
 ### 3.2 命名规范
 
