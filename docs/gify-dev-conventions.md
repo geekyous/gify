@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.6（2026-10） |
+| 版本 | v1.7（2026-10） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -117,22 +117,42 @@ HTTP 状态码与信封 `code` 必须成对声明、由同一处定义产生，�
 
 ### 3.1 工程结构与分层
 
+领域模块化单体：`app/` 下按业务域划分模块，模块内部再分层。模块边界与错误码号段（2.5）一致。
+
 ```
 backend/app/
 ├── main.py        # 应用入口：路由注册、中间件、异常处理器、生命周期
-├── db.py          # engine 与 session 工厂
-├── core/          # config、security、audit、errors、logging、通用 deps
-├── api/           # 路由层，按资源一个文件：auth.py、users.py …
-├── schemas/       # Pydantic 模型，文件与资源同名：users.py …
-├── models/        # SQLAlchemy ORM 模型，文件与表所在域同名
-└── services/      # 业务逻辑层，模块名 资源_service.py：user_service.py …
+├── db.py          # engine、session 工厂、ORM 公共基类
+├── core/          # 公共层：config、schemas（信封基类）、security、audit、errors、logging、通用 deps
+├── identity/      # 用户、认证、审计（FR-01/03）
+├── providers/     # 模型供应商与模型注册（FR-04）
+├── engine/        # 对话引擎与分流路由（FR-05/10）
+├── kb/            # 知识库：文档、分块、检索（FR-06）
+├── tools/         # MCP Server 注册与工具执行（FR-07）
+├── agents/        # Agent 配置（FR-08）
+├── chat/          # 会话、消息、分享页（FR-09/12）
+└── usage/         # 轨迹与用量成本统计（FR-11）
 ```
 
-1. 路由层只做：参数校验、权限检查、调用 service、组装响应。禁止在路由层写业务逻辑、直接操作数据库。
-2. service 层承载业务逻辑与数据访问，函数式模块（模块内普通函数，不用类）。
-3. service 层的创建 / 更新 / 删除操作必须调用统一审计入口（`core/audit`）。
-4. ORM 模型只描述数据结构，不含业务方法。
-5. 依赖注入统一 FastAPI `Depends`：session、当前用户、角色检查均以依赖提供。
+模块内部固定结构（文件增长后可拆子文件，对外接口不变）：
+
+```
+app/<module>/
+├── api.py         # 路由层：模块的 HTTP 接口
+├── schemas.py     # Pydantic 模型
+├── models.py      # SQLAlchemy ORM 模型
+├── service.py     # 业务逻辑（模块公开接口所在）
+└── *_client.py    # 外部系统调用收口（按需，如 openai_client.py）
+```
+
+1. 模块间只允许 import 对方 `service` 的公开函数，禁止 import 对方 api / schemas / models / client 内部；`core` 是唯一公共层，不依赖任何模块。
+2. 路由层只做：参数校验、权限检查、调用 service、组装响应。禁止在路由层写业务逻辑、直接操作数据库。
+3. service 层承载业务逻辑与数据访问，函数式模块（模块内普通函数，不用类）。
+4. service 层的创建 / 更新 / 删除操作必须调用统一审计入口（`core/audit`）。
+5. ORM 模型只描述数据结构，不含业务方法。
+6. 依赖注入统一 FastAPI `Depends`：session、当前用户、角色检查均以依赖提供。
+7. 外部系统调用（模型服务、MCP Server、出网 HTTP）在所属模块的 client 文件收口：超时与重试策略、密钥处理、出向日志只在 client 层出现；client 不 import 任何 service。
+8. engine 模块不依赖 FastAPI 请求上下文，可被 API、后台任务、脚本三种入口调用（需求文档 5.2）。
 
 ### 3.2 命名规范
 
