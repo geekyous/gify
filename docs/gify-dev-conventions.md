@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.8（2026-10） |
+| 版本 | v1.9（2026-11） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -154,6 +154,24 @@ app/<module>/
 7. 依赖注入统一 FastAPI `Depends`：session、当前用户、角色检查均以依赖提供。
 8. 外部系统调用（模型服务、MCP Server、出网 HTTP）在所属模块的 client 文件收口：超时与重试策略、密钥处理、出向日志只在 client 层出现；client 不 import 任何 service。
 9. engine 模块不依赖 FastAPI 请求上下文，可被 API、后台任务、脚本三种入口调用（需求文档 5.2）。
+
+**模块依赖方向**
+
+模块间依赖共 13 条，按性质分两个视角，两图合计即完整依赖集。箭头指向被依赖方，依赖恒指向更低层（同层内恒指向右）。
+
+图 1 · 运行时调用——一条消息的完整路径，engine 不写业务数据（消息由 chat 落库），因此可脱离网页被脚本直调：
+
+![模块依赖：运行时调用](images/module-graph-runtime.svg)
+
+图 2 · 配置与查询——不参与对话执行的引用关系：Agent 负责人保存配置时的校验，统计页的查询：
+
+![模块依赖：配置与查询](images/module-graph-config.svg)
+
+禁止的反向依赖（任一出现即成环）：
+
+1. engine → chat：消息落库由 chat 编排完成，engine 纯执行不写业务数据。
+2. usage → engine：执行轨迹表归 usage 所有，engine 只写入，usage 查自有表。
+3. 业务模块 → identity（审计回查）：审计记录冗余对象摘要，不回查业务表；审计表与写入入口归 core，identity 只提供管理端查询。
 
 ### 3.2 命名规范
 
