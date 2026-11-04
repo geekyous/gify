@@ -73,3 +73,4 @@ sh upgrade.sh                  # 备份提示 → 构建镜像 → 迁移 → �
 - 敏感字段（`password`、`api_key`、`authorization`、`session_id`、`token`）不进日志、审计 detail 与响应
 - 表结构变更一律走 Alembic 迁移；迁移文件提交后不再修改
 - 前端组件不直接使用 HTTP 客户端，统一走 `src/api/request.ts`
+- 注释与文档字符串：中文用中文标点、英文用英文标点，类名引用保持原大小写；不用“ / ”作连词，写自然完整中文（规范 3.6）
