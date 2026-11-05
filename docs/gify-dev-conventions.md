@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.13（2026-11） |
+| 版本 | v1.14（2026-11） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -391,11 +391,12 @@ frontend/src/
 1. 里程碑完成打 tag：`m1`、`m2`、`m3`。
 2. 对外发布版本从 `v1.0.0` 起按语义化版本递增。
 
-### 8.4 提交前检查
+### 8.4 提交前检查与 CI
 
 1. 提交前必须通过：后端 lint 与全部测试；前端 lint 与构建（含类型检查）。
 2. 当前栈命令：后端 `uv run ruff check . && uv run pytest`；前端 `npm run lint && npm run build`。
-3. 禁止提交：`.env`、`node_modules/`、`.venv/`、`dist/`、数据库文件。
+3. CI 在 GitHub Actions 执行同一套检查（`.github/workflows/ci.yml`，含 pgvector 与 redis 服务容器）；push main 在检查通过后自动部署测试环境，内网生产升级仍走 `deploy/upgrade.sh` 手动流程。
+4. 禁止提交：`.env`、`node_modules/`、`.venv/`、`dist/`、数据库文件。
 
 ## 9. 测试与完成定义
 
