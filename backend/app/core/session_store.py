@@ -1,8 +1,9 @@
 """服务端会话存储（Redis）。
 
 键设计：
-- session:{sid} -> JSON {userId, createdAt}，TTL 为会话有效期，每次请求滑动续期
-- user-sessions:{userId} -> SET of sid，用于用户禁用时一次性清空其全部会话
+- session:{sid}：JSON（userId、createdAt），TTL 为会话有效期，每次请求滑动续期
+- user-sessions:{userId}：SET（sid 集合），用于用户禁用时一次性清空其全部会话
+- login-fail:{username}：登录失败计数，达到阈值后在锁定窗口内拒绝登录
 """
 
 import json

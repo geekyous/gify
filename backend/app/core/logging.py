@@ -31,6 +31,7 @@ class JsonFormatter(logging.Formatter):
 
 
 def setup_logging() -> None:
+    """接管 root logger，JSON 输出到 stdout，进程启动时调用一次。"""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
     root = logging.getLogger()

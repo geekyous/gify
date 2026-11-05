@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     @property
     def cookie_secure(self) -> bool:
+        """生产环境或 SameSite 为 none 时强制 Secure，其余跟随部署形态。"""
         return self.env == "prod" or self.cookie_samesite == "none"
 
 

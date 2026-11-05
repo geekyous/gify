@@ -1,4 +1,8 @@
-"""数据库 engine、session 工厂与 ORM 公共基类（SQLAlchemy 2.0 async）。"""
+"""数据库 engine、session 工厂与 ORM 公共基类（SQLAlchemy 2.0 async）。
+
+engine 与 session 工厂为模块级懒加载单例，测试通过替换 _engine 与
+_session_factory 注入独立测试库。
+"""
 
 from collections.abc import AsyncGenerator
 
