@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 用户管理（管理员，FR-01 功能要求 5）：创建、编辑角色、重置密码、禁用。 */
+/** 用户管理：创建、编辑角色、重置密码、禁用。 */
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -44,7 +44,6 @@ function isSelf(user: User) {
   return user.id === auth.user?.id
 }
 
-// ---- 创建 ----
 const createVisible = ref(false)
 const createFormRef = ref<FormInstance>()
 const createSubmitting = ref(false)
@@ -99,7 +98,6 @@ function onCreateClosed() {
   createForm.password = ''
 }
 
-// ---- 初始密码展示 ----
 const initialPasswordState = reactive({
   visible: false,
   title: '',
@@ -117,7 +115,6 @@ async function copyInitialPassword() {
   ElMessage.success('已复制')
 }
 
-// ---- 编辑 ----
 const editVisible = ref(false)
 const editFormRef = ref<FormInstance>()
 const editSubmitting = ref(false)
@@ -153,7 +150,6 @@ async function submitEdit() {
   }
 }
 
-// ---- 重置密码 / 禁用 ----
 async function confirmBox(message: string, title: string): Promise<boolean> {
   try {
     await ElMessageBox.confirm(message, title, { type: 'warning' })

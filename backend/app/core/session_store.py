@@ -56,7 +56,7 @@ async def destroy_session(redis: Redis, sid: str, user_id: UUID) -> None:
 
 
 async def destroy_user_sessions(redis: Redis, user_id: UUID) -> int:
-    """用户被禁用 / 重置密码后清空其全部存量会话（FR-01 功能要求 4）。"""
+    """用户被禁用或重置密码后清空其全部存量会话。"""
     sids = await redis.smembers(f"{_USER_SESSIONS_PREFIX}{user_id}")
     if not sids:
         return 0

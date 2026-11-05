@@ -1,11 +1,11 @@
-"""密码哈希与会话凭证（开发规范 5.2 / 5.5.3）。"""
+"""密码哈希与会话凭证。"""
 
 import secrets
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
-# argon2id，库默认参数集（开发规范 5.2.1：标准参数集）
+# argon2id，库默认参数集
 _hasher = PasswordHasher()
 
 SESSION_COOKIE = "gify_session"
@@ -28,5 +28,5 @@ def generate_session_id() -> str:
 
 
 def generate_initial_password() -> str:
-    """创建用户 / 重置密码时未指定口令则生成随机口令，仅展示一次。"""
+    """创建用户或重置密码时未指定口令则生成随机口令，仅展示一次。"""
     return secrets.token_urlsafe(9)

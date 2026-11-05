@@ -1,6 +1,6 @@
-/** 展示格式化工具。 */
+/** 展示格式化工具 */
 
-/** ISO 8601 UTC 字符串转本地时区展示（开发规范 2.6.1）。 */
+/** ISO 8601 UTC 字符串转本地时区展示 */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const date = new Date(iso)

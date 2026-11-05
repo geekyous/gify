@@ -1,10 +1,10 @@
-"""用户管理与权限测试（FR-01 验收标准 1、2）。"""
+"""用户管理与权限测试"""
 
 from conftest import create_user_direct, login, login_admin
 
 
 async def test_builder_forbidden_on_user_management(client):
-    """Agent 负责人访问用户管理返回 403（FR-01 验收标准 2）。"""
+    """Agent 负责人访问用户管理返回 403"""
     await create_user_direct("builder1", password="Passw0rd!", role="builder")
     await login(client, "builder1", "Passw0rd!")
     resp = await client.get("/api/users")
@@ -46,7 +46,7 @@ async def test_create_duplicate_username(client):
 
 
 async def test_disable_user_invalidates_session_immediately(client):
-    """禁用后该用户在线会话即时失效（FR-01 验收标准 1）。"""
+    """禁用后该用户在线会话即时失效"""
     target = await create_user_direct("victim", password="Passw0rd!")
     await login(client, "victim", "Passw0rd!")
     victim_cookie = client.cookies.get("gify_session")

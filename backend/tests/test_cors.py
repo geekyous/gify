@@ -1,4 +1,4 @@
-"""CORS 白名单测试（开发规范 5.5：生产跨域，凭证依赖精确 Allow-Origin）。"""
+"""CORS 白名单测试（生产跨域，凭证依赖精确 Allow-Origin）。"""
 
 ALLOWED_ORIGIN = "http://localhost:5173"
 

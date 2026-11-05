@@ -1,4 +1,4 @@
-"""identity 模块请求 / 响应模型：认证、用户管理。"""
+"""identity 模块请求与响应模型：认证、用户管理。"""
 
 import uuid
 from datetime import datetime
@@ -9,9 +9,6 @@ from pydantic import Field
 from app.core.schemas import CamelModel
 
 Role = Literal["admin", "builder", "user"]
-
-
-# ---- 认证 ----
 
 
 class LoginIn(CamelModel):
@@ -25,16 +22,13 @@ class ChangePasswordIn(CamelModel):
 
 
 class SessionUser(CamelModel):
-    """当前登录用户信息（GET /api/auth/me）。"""
+    """当前登录用户信息。"""
 
     id: uuid.UUID
     username: str
     display_name: str | None
     role: str
     must_change_password: bool
-
-
-# ---- 用户管理 ----
 
 
 class UserOut(CamelModel):
@@ -71,6 +65,6 @@ class ResetPasswordIn(CamelModel):
 
 
 class ResetPasswordOut(CamelModel):
-    """重置 / 创建时生成的初始口令，仅返回一次。"""
+    """重置或创建时生成的初始口令，仅返回一次。"""
 
     initial_password: str

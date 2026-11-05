@@ -1,11 +1,11 @@
-"""结构化 JSON 日志（开发规范第 6 章）：一行一条输出 stdout，字段 camelCase。"""
+"""结构化 JSON 日志：一行一条输出 stdout，字段 camelCase。"""
 
 import json
 import logging
 import sys
 from datetime import UTC, datetime
 
-# 日志脱敏字段清单（开发规范 5.3.2），输出层统一过滤
+# 日志脱敏字段清单，输出层统一过滤
 _REDACTED_FIELDS = {"password", "api_key", "authorization", "session_id", "token"}
 
 

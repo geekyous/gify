@@ -1,8 +1,8 @@
 /**
- * HTTP 客户端单例（开发规范 7.4）。
+ * HTTP 客户端单例
  * 统一解包信封：code === 0 返回 data；HTTP 401 跳登录页；
  * code !== 0 弹出 message 并 reject；网络错误统一提示。
- * 凭证统一 include：生产跨域携带 cookie，同源 / 开发代理形态通用。
+ * 凭证统一 include：生产跨域携带 cookie，同源与开发代理形态通用。
  */
 import { ElMessage } from 'element-plus'
 

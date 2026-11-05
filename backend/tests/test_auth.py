@@ -1,13 +1,13 @@
-"""认证流程测试（FR-01 验收标准 1、3）。"""
+"""认证流程测试"""
 
 from conftest import INITIAL_ADMIN, create_user_direct, login
 
-# 登录锁定阈值与配置一致（5 次 / 10 分钟）
+# 登录锁定阈值与配置一致（5 次、10 分钟）
 MAX_ATTEMPTS = 5
 
 
 async def test_initial_admin_seeded_and_must_change_password(client):
-    """空库启动自动创建初始管理员，首登强制改密标志为真（FR-01 要求 3）。"""
+    """空库启动自动创建初始管理员，首登强制改密标志为真"""
     resp = await login(client, *INITIAL_ADMIN)
     assert resp.status_code == 200
     body = resp.json()

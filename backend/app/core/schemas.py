@@ -1,6 +1,6 @@
-"""Schema 基类与统一信封（开发规范 2.2 / 2.3）。
+"""Schema 基类与统一响应。
 
-JSON 字段 camelCase 由 alias 统一转换，业务代码内部使用 snake_case（3.3.6）。
+JSON 字段 camelCase 由 alias 统一转换，业务代码内部使用 snake_case。
 """
 
 from pydantic import BaseModel, ConfigDict
@@ -18,7 +18,7 @@ class CamelModel(BaseModel):
 
 
 class Envelope[T](BaseModel):
-    """统一响应信封：{code, message, data}。"""
+    """统一响应：{code, message, data}。"""
 
     code: int = 0
     message: str = "ok"
@@ -30,7 +30,7 @@ class Envelope[T](BaseModel):
 
 
 class Page[T](CamelModel):
-    """分页响应 data 的固定结构（开发规范 2.3.4）。"""
+    """分页响应 data 的固定结构。"""
 
     items: list[T]
     total: int

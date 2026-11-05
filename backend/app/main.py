@@ -1,4 +1,4 @@
-"""应用入口：中间件、异常处理器、路由注册、生命周期（开发规范 3.1）。"""
+"""应用入口：中间件、异常处理器、路由注册、生命周期。"""
 
 import time
 import uuid
@@ -37,7 +37,7 @@ app = FastAPI(title="Gify API", version="0.1.0", lifespan=lifespan)
 
 @app.middleware("http")
 async def request_context(request: Request, call_next):
-    """分配 requestId、记录访问日志（开发规范 6.3）。"""
+    """分配 requestId、记录访问日志"""
     request_id = uuid.uuid4().hex
     request.state.request_id = request_id
     start = time.monotonic()
@@ -58,7 +58,7 @@ async def request_context(request: Request, call_next):
     return response
 
 
-# CORS 白名单放行（开发规范 5.5）：生产前端与 API 不同源，凭证依赖精确 Allow-Origin
+# CORS 白名单放行：生产前端与 API 不同源，凭证依赖精确 Allow-Origin
 # 放在 request_context 之后注册，使其位于最外层，错误响应同样携带 CORS 头
 _settings = get_settings()
 app.add_middleware(
@@ -82,7 +82,7 @@ async def app_error_handler(request: Request, exc: errors.AppError) -> JSONRespo
 async def validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    """请求体校验失败：code 1001，data 为字段级错误（开发规范 2.4）。"""
+    """请求体校验失败：code 1001，data 为字段级错误。"""
     field_errors: dict[str, str] = {}
     for item in exc.errors():
         loc = [part for part in item["loc"] if part not in ("body", "query", "path")]
@@ -125,7 +125,7 @@ async def health() -> Envelope[dict[str, str]]:
 
 
 async def _seed_initial_admin() -> None:
-    """空库时按部署配置创建初始管理员，首次登录强制改密（FR-01 要求 3）。"""
+    """空库时按部署配置创建初始管理员，首次登录强制改密码。"""
     settings = get_settings()
     async for db in provide_session():
         try:

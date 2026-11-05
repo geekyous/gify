@@ -1,4 +1,4 @@
-/** 登录态与当前用户（服务端数据缓存进 Pinia，开发规范 7.3.3）。 */
+/** 登录态与当前用户（服务端数据缓存进 Pinia）。 */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 

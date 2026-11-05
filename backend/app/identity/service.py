@@ -1,4 +1,4 @@
-"""identity 模块业务逻辑：认证（登录、登出、修改密码）与用户管理（FR-01）。"""
+"""identity 模块业务逻辑：认证（登录、登出、修改密码）与用户管理。"""
 
 import uuid
 from typing import Any
@@ -14,16 +14,13 @@ from app.identity.schemas import UserCreateIn, UserUpdateIn
 
 logger = get_logger(__name__)
 
-# 排序白名单（开发规范 2.2.3）：camelCase 请求值 -> 列
+# 排序白名单：camelCase 请求值 -> 列
 ORDERABLE_COLUMNS: dict[str, Any] = {
     "createdAt": User.created_at,
     "username": User.username,
     "role": User.role,
     "enabled": User.enabled,
 }
-
-
-# ---- 查询 ----
 
 
 async def get_by_username(db: AsyncSession, username: str) -> User | None:
@@ -36,9 +33,6 @@ async def get_by_id(db: AsyncSession, user_id: uuid.UUID) -> User:
     if user is None:
         raise errors.err(errors.USER_NOT_FOUND)
     return user
-
-
-# ---- 认证 ----
 
 
 async def login(
@@ -113,9 +107,6 @@ async def change_password(
         "密码修改",
         extra_fields={"event": "user.password_change", "userId": str(user.id)},
     )
-
-
-# ---- 用户管理 ----
 
 
 async def list_users(

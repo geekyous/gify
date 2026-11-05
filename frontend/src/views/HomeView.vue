@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 首页占位：Agent 使用入口在 M3（FR-09）交付。 */
+/** 首页占位：Agent 使用入口在 M3 开发 */
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()

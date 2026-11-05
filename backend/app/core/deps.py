@@ -1,4 +1,4 @@
-"""公共依赖：DB session、Redis（模块内用户 / 角色依赖见各模块 deps）。"""
+"""公共依赖：DB Session、Redis（模块内的用户和角色依赖见各模块 deps）。"""
 
 from typing import Annotated
 

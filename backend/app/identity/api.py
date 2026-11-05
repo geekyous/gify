@@ -27,9 +27,6 @@ auth_router = APIRouter(prefix="/api/auth", tags=["auth"])
 users_router = APIRouter(prefix="/api/users", tags=["users"])
 
 
-# ---- 认证 ----
-
-
 @auth_router.post("/login", status_code=status.HTTP_200_OK)
 async def login(
     data: LoginIn,
@@ -80,9 +77,6 @@ async def change_password(
     await service.change_password(db, redis, user, data.old_password, data.new_password)
     response.delete_cookie(SESSION_COOKIE, path="/")
     return Envelope.ok(None)
-
-
-# ---- 用户管理（管理员，FR-01 功能要求 5） ----
 
 
 @users_router.get("")

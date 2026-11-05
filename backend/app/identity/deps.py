@@ -18,7 +18,7 @@ async def get_current_user(
     db: Annotated[AsyncSession, Depends(provide_session)],
     redis: Annotated[Redis, Depends(get_redis)],
 ) -> User:
-    """解析会话 cookie 并加载用户；禁用用户即使会话残留也拒绝（FR-01 要求 4 的兜底）。"""
+    """解析会话 cookie 并加载用户；禁用用户即使会话残留也拒绝。"""
     sid = request.cookies.get(SESSION_COOKIE)
     if not sid:
         raise errors.err(errors.AUTH_NOT_AUTHENTICATED)

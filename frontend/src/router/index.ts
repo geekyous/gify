@@ -1,4 +1,4 @@
-/** 路由与守卫：登录态与角色集中处理（开发规范 7.3.4）。 */
+/** 路由与守卫：登录态与角色集中处理 */
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 

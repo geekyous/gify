@@ -1,4 +1,4 @@
-/** 认证接口（对应后端 /api/auth/*）。 */
+/** 认证接口：登录、登出、当前用户、修改密码。 */
 import { http } from './request'
 
 export type Role = 'admin' | 'builder' | 'user'

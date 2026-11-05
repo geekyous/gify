@@ -1,4 +1,4 @@
-"""用户表 ORM 模型（FR-01）。"""
+"""用户表 ORM 模型。"""
 
 import uuid
 from datetime import datetime

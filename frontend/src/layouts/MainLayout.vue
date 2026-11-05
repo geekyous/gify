@@ -30,7 +30,7 @@ const menus = computed(() => {
 const changePasswordVisible = ref(false)
 
 watchEffect(() => {
-  // 首登 / 重置密码后强制修改（FR-01 要求 3）
+  // 首次登录或重置密码后强制修改
   if (auth.user?.mustChangePassword) {
     changePasswordVisible.value = true
   }
