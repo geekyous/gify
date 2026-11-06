@@ -2,12 +2,12 @@
 
 Compose 四容器：app（API）、frontend（nginx 静态托管）、postgres（pgvector）、redis。前端与 API 跨域：前端构建时注入 API 地址（`VITE_API_BASE_URL`），后端用 `CORS_ORIGINS` 白名单放行前端来源。
 
-两种部署形态：
+两种部署形态都用 Actions 构建并存放在阿里云 ACR 的镜像，服务器上不做构建：
 
 | | 测试环境（云服务器） | 生产（内网） |
 |---|---|---|
-| 构建方式 | Actions 构建镜像，推送阿里云 ACR | 服务器上从源码构建 |
-| 发版方式 | push main 自动部署 | 手动执行 upgrade.sh |
+| 发版 | push main 自动部署 | 手动执行 upgrade.sh |
+| 版本 | 跟随 main | 指定 git sha，便于回滚 |
 | 备份 | 不备份，数据可弃 | 升级前 pg_dump 备份 |
 
 ## 测试环境
@@ -25,8 +25,8 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
         拉取镜像 → 数据迁移 → 重启容器
 
 访问入口（Cloudflare 提供 HTTPS）：
-  app.<域名>  → frontend 容器（源站 :8081）
-  api.<域名>  → app 容器（源站 :8080）
+  app.<域名>  → frontend 容器
+  api.<域名>  → app 容器
   web.<域名>  → Cloudflare Pages 自动构建的另一份前端
 ```
 
@@ -49,7 +49,7 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
 **Cloudflare**
 
 1. DNS 添加两条 A 记录：`app` 与 `api` 指向云服务器 IP，开启代理（橙云）。
-2. Origin Rules 添加两条端口改写：`app` 主机名改写到 8081，`api` 改写到 8080。
+2. Origin Rules 添加两条端口改写：`app` 主机名改写到 `FRONTEND_PORT`，`api` 改写到 `APP_PORT`。
 3. Pages 创建项目并连接 GitHub 仓库：根目录 `frontend`，构建命令 `npm run build`，输出目录 `dist`，环境变量 `VITE_API_BASE_URL` 与 `API_BASE_URL` 同值；绑定自定义域 `web`。
 
 **云服务器**
@@ -61,8 +61,9 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
 SECRET_KEY=<openssl rand -hex 32 生成>
 INIT_ADMIN_PASSWORD=<初始管理员口令>
 POSTGRES_PASSWORD=<改掉默认值>
-APP_PORT=8080
-FRONTEND_PORT=8081
+REDIS_PASSWORD=<openssl rand -hex 16 生成>
+APP_PORT=<高位端口，如 39871>
+FRONTEND_PORT=<另一个高位端口，如 40912>
 ACR_REGISTRY=registry.cn-<地域>.aliyuncs.com
 ACR_NAMESPACE=<命名空间>
 ACR_USERNAME=<阿里云账号或 RAM 子账号>
@@ -72,7 +73,9 @@ CORS_ORIGINS=https://app.<域名>,https://web.<域名>
 COOKIE_SAMESITE=none
 ```
 
-3. 防火墙放行 8080 与 8081。postgres 与 redis 只绑定 127.0.0.1，不对外。
+端口不用 8080、8000 这类常见值，取一万以上的随机端口，降低被扫描命中的概率；Cloudflare 改写的源站端口与这里保持一致。
+
+3. 防火墙只放行 `APP_PORT` 与 `FRONTEND_PORT`。postgres 与 redis 只绑定 127.0.0.1，不对外。
 
 `COOKIE_SAMESITE` 取 `none` 的原因：Pages 的域名与 API 不在同一注册域，`lax` 不会随跨站请求携带 cookie；`none` 要求 cookie 同时带 Secure 标记，由 Cloudflare 的 HTTPS 满足。
 
@@ -94,24 +97,41 @@ TAG=<commit sha> sh deploy.sh
 
 ## 生产部署（内网）
 
+生产与测试用同一套镜像，差异只在发版方式：生产手动指定版本，升级前备份。内网机器需要能访问 ACR 拉取镜像；完全隔离的网络用本节末尾的离线导入。
+
 ### 初装
 
-```bash
-cd deploy
-cp .env.example .env
-# 编辑 .env：SECRET_KEY、INIT_ADMIN_PASSWORD、POSTGRES_PASSWORD，
-# 以及 VITE_API_BASE_URL 与 CORS_ORIGINS（实际的前端与 API 地址）
-docker compose up -d --build
-sh migrate.sh
-```
+1. 安装 Docker，创建部署目录（如 `/opt/gify`），放入 `docker-compose.yml`、`deploy.sh`、`upgrade.sh` 三个文件。
+2. 执行一次 `docker login <ACR 地址>`，凭据会写入 `~/.docker/config.json`。
+3. 写 `.env`，项与测试环境相同，地址换内网实际值；前端与 API 若在同一注册域，`COOKIE_SAMESITE` 用 `lax` 即可。
+4. `TAG=<版本 sha> sh deploy.sh`。
 
 完成后浏览器打开 `http://<主机>:${FRONTEND_PORT}`，用初始管理员账号登录，首次登录强制改密。
 
 ### 升级
 
 ```bash
-cd deploy
-sh upgrade.sh
+TAG=<版本 sha> sh upgrade.sh
+```
+
+upgrade.sh 先做备份确认（pg_dump），确认后执行与 deploy.sh 相同的拉取、迁移、重启。
+
+### 离线导入镜像
+
+不能访问 ACR 的机器，在有网的机器上导出镜像文件再拷贝过去：
+
+```bash
+docker pull <ACR 地址>/<命名空间>/gify-app:<sha>
+docker save <ACR 地址>/<命名空间>/gify-app:<sha> | gzip > gify-app-<sha>.tar.gz
+# 拷贝到内网机器后
+docker load < gify-app-<sha>.tar.gz
+```
+
+frontend 镜像同样处理。导入后跳过 deploy.sh 的 pull，直接执行迁移与重启：
+
+```bash
+TAG=<sha> docker compose run --rm app uv run alembic upgrade head
+TAG=<sha> docker compose up -d --no-build
 ```
 
 ## 备份与恢复
