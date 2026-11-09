@@ -116,6 +116,13 @@ TAG=<版本 sha> sh upgrade.sh
 
 upgrade.sh 先做备份确认（pg_dump），确认后执行与 deploy.sh 相同的拉取、迁移、重启。
 
+`POSTGRES_PASSWORD` 只在数据卷首次初始化时生效。库已建立后修改口令，需要进容器执行 `ALTER USER`（容器内 socket 连接不需要密码）：
+
+```bash
+docker compose exec -T postgres psql -U gify \
+  -c "ALTER USER gify WITH PASSWORD '新口令';"
+```
+
 ### 离线导入镜像
 
 不能访问 ACR 的机器，在有网的机器上导出镜像文件再拷贝过去：
