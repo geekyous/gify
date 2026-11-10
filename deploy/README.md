@@ -59,18 +59,17 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
 
 ```
 SECRET_KEY=<openssl rand -hex 32 生成>
+CORS_ORIGINS=https://app.<域名>,https://web.<域名>
+COOKIE_SAMESITE=none
 INIT_ADMIN_PASSWORD=<初始管理员口令>
-POSTGRES_PASSWORD=<改掉默认值>
+APP_PORT=<高位端口>
+FRONTEND_PORT=<另一个高位端口>
+POSTGRES_PASSWORD=<openssl rand -hex 16 生成>
 REDIS_PASSWORD=<openssl rand -hex 16 生成>
-APP_PORT=<高位端口，如 39871>
-FRONTEND_PORT=<另一个高位端口，如 40912>
 ACR_REGISTRY=registry.cn-<地域>.aliyuncs.com
 ACR_NAMESPACE=<命名空间>
 ACR_USERNAME=<阿里云账号或 RAM 子账号>
 ACR_PASSWORD=<固定密码>
-VITE_API_BASE_URL=https://api.<域名>
-CORS_ORIGINS=https://app.<域名>,https://web.<域名>
-COOKIE_SAMESITE=none
 ```
 
 端口不用 8080、8000 这类常见值，取一万以上的随机端口，降低被扫描命中的概率；Cloudflare 改写的源站端口与这里保持一致。
