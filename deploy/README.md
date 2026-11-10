@@ -169,4 +169,4 @@ docker compose logs -f --tail 100 app frontend
 
 ## 本地开发
 
-本地起后端、前端开发服务时，postgres 与 redis 已映射到 `127.0.0.1:5432`、`127.0.0.1:6379`；`.env` 中 `DATABASE_URL`、`REDIS_URL` 的 localhost 值即为此用途，app 容器内由 compose `environment` 覆盖为服务名地址。前端开发服务（5173）走 Vite 代理转发 `/api`，无需注入 `VITE_API_BASE_URL`。
+本地起后端、前端开发服务时，postgres 与 redis 由 compose 启动并映射到 `127.0.0.1`（端口取 `.env` 的 `POSTGRES_PORT`、`REDIS_PORT`，默认 5432、6379）。后端配置从组件拼装连接串：本机默认连 `localhost`，app 容器内由 compose `environment` 覆盖主机名与端口指向服务地址。前端开发服务（5173）走 Vite 代理转发 `/api`，无需注入 `VITE_API_BASE_URL`。
