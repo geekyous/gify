@@ -16,7 +16,7 @@ backend/     FastAPI 模块化单体：app/core 公共层 + 按域模块（ident
              engine、kb、tools、agents、chat、usage）、alembic/、tests/
 frontend/    Vue 3：src/{api,stores,router,layouts,views,components,utils}
 deploy/      Compose 四容器：Dockerfile（app）、frontend.Dockerfile、nginx.conf、
-             docker-compose.yml、migrate.sh、upgrade.sh、.env.example、README.md
+             docker-compose.yml、deploy.sh、upgrade.sh、.env.example、README.md
 docs/        需求文档与开发规范（功能需求唯一来源）
 ```
 
@@ -36,13 +36,13 @@ npm run lint && npm run build  # 提交前检查（build 含类型检查）
 
 # 部署栈（本地验证 / 目标机部署）
 cd deploy
-docker compose up -d --build   # 四容器；postgres、redis 映射 127.0.0.1:5432/6379
-sh migrate.sh                  # 容器内执行 Alembic 升级
-sh upgrade.sh                  # 备份提示 → 构建镜像 → 迁移 → 重启
+docker compose up -d --build   # 本地四容器验证；postgres、redis 仅绑定 127.0.0.1
+sh upgrade.sh                  # 备份确认 → 拉取镜像 → 迁移 → 重启（生产）
 ```
 
-- 后端配置统一读 `deploy/.env`（样例 `deploy/.env.example`，永不提交）；新增配置项必须同步样例
-- 本地开发用 compose 起 postgres/redis，后端直连 `127.0.0.1`；app 容器内由 compose `environment` 覆盖为服务名地址
+- 测试环境与生产都用 Actions 构建并存放于 ACR 的镜像（`TAG=<sha> sh deploy.sh` 拉取部署），服务器不做构建；流程见 `deploy/README.md`
+- 后端配置统一读 `deploy/.env`（样例 `deploy/.env.example`，永不提交；真实凭据不进仓库）；新增配置项必须同步样例
+- 本地开发用 compose 起 postgres/redis，后端直连 `127.0.0.1`（端口可在 `.env` 改）；app 容器内由 compose `environment` 覆盖主机名与端口
 - 测试使用独立库 `gify_test` 与 Redis db 1，不触碰开发数据
 
 ## 技术栈
