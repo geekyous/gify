@@ -103,14 +103,14 @@ TAG=<commit sha> sh deploy.sh
 1. 安装 Docker，创建部署目录（如 `/opt/gify`），放入 `docker-compose.yml`、`deploy.sh`、`upgrade.sh` 三个文件。
 2. 执行一次 `docker login <ACR 地址>`，凭据会写入 `~/.docker/config.json`。
 3. 写 `.env`，项与测试环境相同，地址换内网实际值；前端与 API 若在同一注册域，`COOKIE_SAMESITE` 用 `lax` 即可。
-4. `TAG=<版本 sha> sh deploy.sh`。
+4. `TAG=<版本号，如 v0.3.0> sh deploy.sh`。
 
 完成后浏览器打开 `http://<主机>:${FRONTEND_PORT}`，用初始管理员账号登录，首次登录强制改密。
 
 ### 升级
 
 ```bash
-TAG=<版本 sha> sh upgrade.sh
+TAG=<版本号，如 v0.3.1> sh upgrade.sh
 ```
 
 upgrade.sh 先做备份确认（pg_dump），确认后执行与 deploy.sh 相同的拉取、迁移、重启。
