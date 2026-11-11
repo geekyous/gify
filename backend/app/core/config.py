@@ -15,8 +15,15 @@ class Settings(BaseSettings):
 
     env: Literal["dev", "prod"] = "dev"
 
-    database_url: str
-    redis_url: str
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_user: str = "gify"
+    postgres_password: str = "gify"
+    postgres_db: str = "gify"
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str = ""
+    redis_db: int = 0
     secret_key: str
 
     # CORS 允许的前端来源：逗号分隔的完整 origin，含协议与端口
@@ -30,6 +37,17 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 7 * 24 * 3600
     login_max_attempts: int = 5
     login_lock_seconds: int = 600
+
+    @property
+    def database_url(self) -> str:
+        return (
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def redis_url(self) -> str:
+        return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
     @property
     def cors_origin_list(self) -> list[str]:

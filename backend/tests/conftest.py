@@ -6,15 +6,42 @@
 """
 
 import os
+from pathlib import Path
 
-# 必须在导入 app 之前覆盖环境（app.core.config 在导入时实例化）
+
+def _env_value(key: str) -> str:
+    """从 deploy/.env 读取配置"""
+    path = Path(__file__).resolve().parents[2] / "deploy" / ".env"
+
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if line.startswith(f"{key}="):
+                return line.split("=", 1)[1].strip()
+    return ""
+
+
+_pg_user = _env_value("POSTGRES_USER") or "gify"
+_pg_password = _env_value("POSTGRES_PASSWORD") or "gify"
+TEST_DB_PORT = _env_value("POSTGRES_PORT") or 5432
+# 测试库是独立的，
 TEST_DB_NAME = "gify_test"
-TEST_DATABASE_URL = os.environ.setdefault(
-    "DATABASE_URL", f"postgresql+psycopg://gify:gify@localhost:5432/{TEST_DB_NAME}"
+TEST_DATABASE_URL = f"postgresql+psycopg://{_pg_user}:{_pg_password}@localhost:{TEST_DB_PORT}/{TEST_DB_NAME}"
+
+ADMIN_DB_URL = (
+    f"postgresql://{_pg_user}:{_pg_password}@localhost:{TEST_DB_PORT}/postgres"
 )
-ADMIN_DB_URL = "postgresql://gify:gify@localhost:5432/postgres"
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/1")
+
+_redis_password = _env_value("REDIS_PASSWORD")
+_redis_port = _env_value("REDIS_PORT") or 6379
+TEST_REDIS_URL = f"redis://:{_redis_password}@localhost:{_redis_port}/1"
+
+os.environ.setdefault("POSTGRES_DB", TEST_DB_NAME)
+os.environ.setdefault("REDIS_DB", "1")
+os.environ.setdefault("REDIS_PASSWORD", _env_value("REDIS_PASSWORD"))
 os.environ.setdefault("SECRET_KEY", "test-secret")
+# 固定初始管理员凭据，不随本地 deploy/.env 漂移（进程环境优先于 .env 文件）
+os.environ.setdefault("INIT_ADMIN_USERNAME", "admin")
+os.environ.setdefault("INIT_ADMIN_PASSWORD", "change-on-first-login")
 
 import httpx
 import psycopg
@@ -52,7 +79,7 @@ async def client():
 
     async with db_mod.get_engine().begin() as conn:
         await conn.execute(sa.text("TRUNCATE users CASCADE"))
-    cleaner = Redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+    cleaner = Redis.from_url(TEST_REDIS_URL, decode_responses=True)
     await cleaner.flushdb()
     await cleaner.aclose()
 

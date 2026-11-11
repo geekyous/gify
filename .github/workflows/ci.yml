@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"] # 正式版标签触发构建
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: gify
+          POSTGRES_PASSWORD: gify
+          POSTGRES_DB: gify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gify"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  build-push:
+    needs: [backend, frontend]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    concurrency: build-push
+    env:
+      ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+      ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: 构建并推送镜像
+        run: |
+          # 标签构建用标签名与生产 API 地址；main 推送用 git sha 与测试 API 地址
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION="$GITHUB_REF_NAME"
+            API_BASE="${{ vars.PROD_API_BASE_URL }}"
+          else
+            VERSION=$(git rev-parse --short HEAD)
+            API_BASE="${{ vars.API_BASE_URL }}"
+          fi
+          docker build -f deploy/Dockerfile \
+            -t "$ACR_REGISTRY/$ACR_NAMESPACE/gify-app:$VERSION" .
+          docker build -f deploy/frontend.Dockerfile \
+            --build-arg VITE_API_BASE_URL="$API_BASE" \
+            -t "$ACR_REGISTRY/$ACR_NAMESPACE/gify-frontend:$VERSION" .
+          docker push "$ACR_REGISTRY/$ACR_NAMESPACE/gify-app:$VERSION"
+          docker push "$ACR_REGISTRY/$ACR_NAMESPACE/gify-frontend:$VERSION"
+          # 仅 main 推送时更新 latest（测试环境的缺省版本）
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            docker tag "$ACR_REGISTRY/$ACR_NAMESPACE/gify-app:$VERSION" "$ACR_REGISTRY/$ACR_NAMESPACE/gify-app:latest"
+            docker tag "$ACR_REGISTRY/$ACR_NAMESPACE/gify-frontend:$VERSION" "$ACR_REGISTRY/$ACR_NAMESPACE/gify-frontend:latest"
+            docker push "$ACR_REGISTRY/$ACR_NAMESPACE/gify-app:latest"
+            docker push "$ACR_REGISTRY/$ACR_NAMESPACE/gify-frontend:latest"
+          fi
+
+  deploy-test:
+    needs: build-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy-test
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: 部署到测试环境
+        env:
+          SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
+          SSH_USER: ${{ secrets.TEST_SSH_USER }}
+          SSH_KEY: ${{ secrets.TEST_SSH_KEY }}
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          install -m 600 /dev/null key
+          printf '%s\n' "$SSH_KEY" > key
+          scp -i key -o StrictHostKeyChecking=accept-new \
+            deploy/docker-compose.yml deploy/deploy.sh "$SSH_USER@$SSH_HOST:/opt/gify/"
+          ssh -i key "$SSH_USER@$SSH_HOST" "cd /opt/gify && TAG=$SHA sh deploy.sh"
