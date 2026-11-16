@@ -121,5 +121,5 @@ jobs:
           install -m 600 /dev/null key
           printf '%s\n' "$SSH_KEY" > key
           scp -i key -o StrictHostKeyChecking=accept-new \
-            deploy/docker-compose.yml deploy/deploy.sh "$SSH_USER@$SSH_HOST:/opt/gify/"
+            deploy/docker-compose.yml deploy/deploy.sh deploy/nginx-gateway.conf "$SSH_USER@$SSH_HOST:/opt/gify/"
           ssh -i key "$SSH_USER@$SSH_HOST" "cd /opt/gify && TAG=$SHA sh deploy.sh"
