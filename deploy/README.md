@@ -15,7 +15,7 @@ Compose 四容器：app（API）、frontend（nginx 静态托管）、postgres�
 ### 流程
 
 ```
-GitHub 私有仓（push main）
+GitHub 仓库（push main）
         │
         ▼
 Actions：lint 与测试 → 构建镜像 → 推送 ACR
@@ -42,9 +42,30 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
 
 **GitHub**
 
-1. 创建私有仓库并推送代码。
-2. Settings → Secrets and variables → Actions，添加 secrets：`TEST_SSH_HOST`、`TEST_SSH_USER`、`TEST_SSH_KEY`、`ACR_REGISTRY`、`ACR_NAMESPACE`、`ACR_USERNAME`、`ACR_PASSWORD`。
-3. 同页 Variables 添加 `API_BASE_URL`，值为 API 对外地址，如 `https://api.example.com`。
+1. 创建仓库并推送代码。部署审批（Required reviewers）免费套餐仅公共仓库可用，私有仓库需要 Team 套餐。
+2. Repository 级配置（Settings → Secrets and variables → Actions）：secrets 添加 `ACR_REGISTRY`、`ACR_NAMESPACE`、`ACR_USERNAME`、`ACR_PASSWORD`；Variables 添加 `API_BASE_URL`（测试 API 地址，如 `https://api.example.com`）与 `PROD_API_BASE_URL`（生产 API 地址，正式版镜像构建时注入）。
+3. 部署环境（Settings → Environments）：新建 `test`，Required reviewers 勾审批人——部署任务在此暂停等批准；环境 secrets 添加 `TEST_SSH_HOST`、`TEST_SSH_USER`、`TEST_SSH_KEY`。
+
+**部署密钥**
+
+CI 登录服务器用专用密钥，与个人密钥分离、可单独吊销。私钥必须**无口令**（CI 非交互环境无法解密带口令的私钥，会报 `error in libcrypto`）：
+
+```bash
+# 生成专用密钥（-N "" 表示无口令）
+ssh-keygen -t ed25519 -f ~/gify-ci-deploy -N "" -C "gify-ci-deploy"
+
+# 公钥装到云服务器并收紧权限
+cat ~/gify-ci-deploy.pub | ssh <用户>@<服务器IP> \
+  "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
+
+# 本地验证免密登录，输出 ok 再继续
+ssh -i ~/gify-ci-deploy <用户>@<服务器IP> echo ok
+
+# 私钥全文粘贴进 test 环境的 TEST_SSH_KEY
+cat ~/gify-ci-deploy
+```
+
+粘贴时从 `-----BEGIN OPENSSH PRIVATE KEY-----` 到 `-----END OPENSSH PRIVATE KEY-----` 一行不少；本地验证不通过时先查服务器 `authorized_keys` 权限，再配置 CI。
 
 **Cloudflare**
 
