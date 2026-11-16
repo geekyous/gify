@@ -1,6 +1,6 @@
 # Gify 部署
 
-Compose 四容器：app（API）、frontend（nginx 静态托管）、postgres（pgvector）、redis。前端与 API 跨域：前端构建时注入 API 地址（`VITE_API_BASE_URL`），后端用 `CORS_ORIGINS` 白名单放行前端来源。
+Compose 五容器：gateway（入口 nginx，TLS 与域名分流）、frontend（nginx 静态托管）、app（API）、postgres（pgvector）、redis。前端与 API 跨域：前端构建时注入 API 地址（`VITE_API_BASE_URL`），后端用 `CORS_ORIGINS` 白名单放行前端来源。
 
 两种部署形态都用 Actions 构建并存放在阿里云 ACR 的镜像，服务器上不做构建：
 

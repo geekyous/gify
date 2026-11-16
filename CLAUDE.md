@@ -15,7 +15,7 @@
 backend/     FastAPI 模块化单体：app/core 公共层 + 按域模块（identity、providers、
              engine、kb、tools、agents、chat、usage）、alembic/、tests/
 frontend/    Vue 3：src/{api,stores,router,layouts,views,components,utils}
-deploy/      Compose 四容器：Dockerfile（app）、frontend.Dockerfile、nginx.conf、
+deploy/      Compose 五容器：gateway、frontend、app、postgres、redis；Dockerfile（app）、
              docker-compose.yml、deploy.sh、nginx-gateway.conf、upgrade.sh、.env.example、README.md
 docs/        需求文档与开发规范（功能需求唯一来源）
 ```
@@ -36,7 +36,7 @@ npm run lint && npm run build  # 提交前检查（build 含类型检查）
 
 # 部署栈（本地验证 / 目标机部署）
 cd deploy
-docker compose up -d --build   # 本地四容器验证；postgres、redis 仅绑定 127.0.0.1
+docker compose up -d --build   # 本地五容器验证；除 gateway 的 80/443 外均绑定 127.0.0.1
 sh upgrade.sh                  # 备份确认 → 拉取镜像 → 迁移 → 重启（生产）
 ```
 
@@ -49,7 +49,7 @@ sh upgrade.sh                  # 备份确认 → 拉取镜像 → 迁移 → �
 
 - 后端：Python 3.12 + FastAPI + SQLAlchemy 2.0（async）+ Alembic，uv 管理依赖
 - 前端：Vue 3 + TypeScript + Vite + Element Plus + Pinia
-- 数据：PostgreSQL 16（pgvector 镜像）+ Redis 7；部署 Compose 四容器：app（API）、nginx（前端静态）、postgres、redis（`deploy/`）
+- 数据：PostgreSQL 16（pgvector 镜像）+ Redis 7；部署 Compose 五容器：gateway（入口）、frontend（nginx 静态）、app（API）、postgres、redis（`deploy/`）
 - 前端与 API 跨域：生产构建注入 `VITE_API_BASE_URL`，后端 CORS 白名单 `CORS_ORIGINS` 放行；认证为服务端 session（Redis 存储 + HttpOnly cookie）
 
 ## 关键约定
