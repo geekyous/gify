@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.15（2026-11） |
+| 版本 | v1.16（2026-11） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -365,9 +365,9 @@ frontend/src/
 ### 8.1 分支模型
 
 1. 分支名 `feature/` 前缀 + kebab-case，如 `feature/user-auth`。
-2. main 单分支开发，保持可发布状态。
-3. 跨多日的功能开 `feature/xxx` 分支；完成后 rebase 到 main，`--ff-only` 合并，保持线性历史。
-4. 单人项目不设 review 流程；修复类允许直接提交 main。
+2. main 是发布通道：每次推送触发构建与测试环境部署审批，保持随时可发布状态。
+3. 功能与配置改动一律在 `feature/xxx` 分支开发，不直接提交 main；完成后 rebase 到 main，`--ff-only` 合并，保持线性历史。合并并推送 main 即为发版动作，时机由人决定。
+4. 单人项目不设 review 流程；纯文档修改允许直接提交 main，CI 对纯文档推送不触发部署（8.4）。
 
 ### 8.2 提交信息
 
@@ -397,7 +397,7 @@ frontend/src/
 
 1. 提交前必须通过：后端 lint 与全部测试；前端 lint 与构建（含类型检查）。
 2. 当前栈命令：后端 `uv run ruff check . && uv run pytest`；前端 `npm run lint && npm run build`。
-3. CI 在 GitHub Actions 执行同一套检查（`.github/workflows/ci.yml`，含 pgvector 与 redis 服务容器）；push main 在检查通过后自动部署测试环境，内网生产升级仍走 `deploy/upgrade.sh` 手动流程。
+3. CI 在 GitHub Actions 执行同一套检查（`.github/workflows/ci.yml`，含 pgvector 与 redis 服务容器）；push main 在检查通过后自动部署测试环境，内网生产升级仍走 `deploy/upgrade.sh` 手动流程；纯文档推送（`paths-ignore`：`docs/**`、`**.md`）不触发流水线。
 4. 禁止提交：`.env`、`node_modules/`、`.venv/`、`dist/`、数据库文件。
 
 ## 9. 测试与完成定义
