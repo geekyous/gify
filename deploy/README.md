@@ -19,15 +19,14 @@ GitHub 仓库（push main）
         │
         ▼
 Actions：lint 与测试 → 构建镜像 → 推送 ACR
-        │  SSH：同步 compose 与 deploy.sh，执行 deploy.sh
+        │  SSH：同步 compose、deploy.sh、nginx-gateway.conf，执行 deploy.sh
         ▼
 云服务器 /opt/gify（无业务源码）
         拉取镜像 → 数据迁移 → 重启容器
 
-访问入口（Cloudflare 提供 HTTPS）：
-  app.<域名>  → frontend 容器
-  api.<域名>  → app 容器
-  web.<域名>  → Cloudflare Pages 自动构建的另一份前端
+访问入口（gateway 容器，宿主机 80 与 443，TLS 终结、按域名分流）：
+  https://test.gify.<域名>     → frontend 容器（静态资源）
+  https://test.api.<域名>     → app 容器（API）
 ```
 
 镜像以 git 短 sha 作版本号，同时更新 latest 标签；`gify-app` 与 `gify-frontend` 存放在同一命名空间下。
@@ -67,11 +66,35 @@ cat ~/gify-ci-deploy
 
 粘贴时从 `-----BEGIN OPENSSH PRIVATE KEY-----` 到 `-----END OPENSSH PRIVATE KEY-----` 一行不少；本地验证不通过时先查服务器 `authorized_keys` 权限，再配置 CI。
 
-**Cloudflare**
+**域名与证书**
 
-1. DNS 添加两条 A 记录：`app` 与 `api` 指向云服务器 IP，开启代理（橙云）。
-2. Origin Rules 添加两条端口改写：`app` 主机名改写到 `FRONTEND_PORT`，`api` 改写到 `APP_PORT`。
-3. Pages 创建项目并连接 GitHub 仓库：根目录 `frontend`，构建命令 `npm run build`，输出目录 `dist`，环境变量 `VITE_API_BASE_URL` 与 `API_BASE_URL` 同值；绑定自定义域 `web`。
+1. DNS 两条 A 记录指向云服务器 IP，代理关闭（直连）。
+2. 大陆服务器的 80、443 绑定域名需要 ICP 备案，动手前先确认域名备案状态。
+3. 服务器安装 certbot：`apt install certbot`。
+4. gateway 首次启动只带 80——`nginx-gateway.conf` 的 443 块保持注释（证书未签发前 nginx 起不来）：
+
+```bash
+cd /opt/gify
+mkdir -p certbot/www
+docker compose up -d gateway
+```
+
+5. 签发证书（webroot 方式，验证文件写入挂载目录）：
+
+```bash
+sudo certbot certonly --webroot -w /opt/gify/certbot/www \
+  -d test.gify.<域名> -d test.api.<域名>
+```
+
+6. 解开 `nginx-gateway.conf` 中两个 443 块的注释，续期挂 hook 并 reload：
+
+```bash
+sudo certbot renew --deploy-hook \
+  "docker compose -f /opt/gify/docker-compose.yml exec gateway nginx -s reload"
+docker compose exec gateway nginx -s reload
+```
+
+Cloudflare 代理（Origin Rules 端口改写）作为备选入口保留可行性：需要时放开 app、frontend 端口映射并配置 CF 即可，gateway 不冲突。
 
 **云服务器**
 
@@ -80,8 +103,7 @@ cat ~/gify-ci-deploy
 
 ```
 SECRET_KEY=<openssl rand -hex 32 生成>
-CORS_ORIGINS=https://app.<域名>,https://web.<域名>
-COOKIE_SAMESITE=none
+CORS_ORIGINS=https://test.gify.<域名>
 INIT_ADMIN_PASSWORD=<初始管理员口令>
 APP_PORT=<高位端口>
 FRONTEND_PORT=<另一个高位端口>
@@ -93,17 +115,15 @@ ACR_USERNAME=<阿里云账号或 RAM 子账号>
 ACR_PASSWORD=<固定密码>
 ```
 
-端口不用 8080、8000 这类常见值，取一万以上的随机端口，降低被扫描命中的概率；Cloudflare 改写的源站端口与这里保持一致。
+前端与 API 同注册域，`COOKIE_SAMESITE` 保持默认 `lax` 即可；`ENV=prod` 使会话 cookie 带 Secure。`APP_PORT` 与 `FRONTEND_PORT` 仅绑定 127.0.0.1，供本地排障与 Cloudflare 备选入口使用。
 
-3. 防火墙只放行 `APP_PORT` 与 `FRONTEND_PORT`。postgres 与 redis 只绑定 127.0.0.1，不对外。
-
-`COOKIE_SAMESITE` 取 `none` 的原因：Pages 的域名与 API 不在同一注册域，`lax` 不会随跨站请求携带 cookie；`none` 要求 cookie 同时带 Secure 标记，由 Cloudflare 的 HTTPS 满足。
+3. 防火墙只放行 80 与 443。app、frontend、postgres、redis 均只绑定 127.0.0.1，不对外。
 
 **验证**
 
 1. 向 main 推送一次提交，观察 Actions 从检查到部署全部通过。
-2. `curl https://api.<域名>/api/health` 应返回 `{"code":0,...}`。
-3. 浏览器分别打开 `https://app.<域名>` 与 `https://web.<域名>`，用初始管理员登录并修改密码。
+2. `curl https://test.api.<域名>/api/health` 应返回 `{"code":0,...}`。
+3. 浏览器打开 `https://test.gify.<域名>`，用初始管理员登录并修改密码。
 
 ### 发版与回滚
 

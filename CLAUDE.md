@@ -16,7 +16,7 @@ backend/     FastAPI 模块化单体：app/core 公共层 + 按域模块（ident
              engine、kb、tools、agents、chat、usage）、alembic/、tests/
 frontend/    Vue 3：src/{api,stores,router,layouts,views,components,utils}
 deploy/      Compose 四容器：Dockerfile（app）、frontend.Dockerfile、nginx.conf、
-             docker-compose.yml、deploy.sh、upgrade.sh、.env.example、README.md
+             docker-compose.yml、deploy.sh、nginx-gateway.conf、upgrade.sh、.env.example、README.md
 docs/        需求文档与开发规范（功能需求唯一来源）
 ```
 
