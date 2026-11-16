@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     tags: ["v*"] # 正式版标签触发构建
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
