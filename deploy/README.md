@@ -19,7 +19,8 @@ GitHub 仓库（push main）
         │
         ▼
 Actions：lint 与测试 → 构建镜像 → 推送 ACR
-        │  SSH：同步 compose、deploy.sh、nginx-gateway.conf，执行 deploy.sh
+        │  SSH：同步 docker-compose.yml 与 deploy.sh，执行 deploy.sh
+          （nginx-gateway.conf 为环境相关配置，服务器自持，不随发版覆盖）
         ▼
 云服务器 /opt/gify（无业务源码）
         拉取镜像 → 数据迁移 → 重启容器
@@ -99,7 +100,7 @@ Cloudflare 代理（Origin Rules 端口改写）作为备选入口保留可行�
 **云服务器**
 
 1. 安装 Docker。
-2. 创建目录 `/opt/gify`，写入 `.env`（`docker-compose.yml` 与 `deploy.sh` 首次部署时由 Actions 复制过来）。以 `.env.example` 为底，修改以下各项：
+2. 创建目录 `/opt/gify`，手动放入仓库 `deploy/` 下的 `docker-compose.yml`、`deploy.sh`、`nginx-gateway.conf` 三个文件（后两个此后由 Actions 同步 / 服务器自持：compose 与 deploy.sh 每次发版覆盖，gateway 配置含本机域名与证书路径，只在初装与变更时手动更新）。写入 `.env`，以 `.env.example` 为底，修改以下各项：
 
 ```
 SECRET_KEY=<openssl rand -hex 32 生成>
