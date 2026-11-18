@@ -90,10 +90,17 @@ sudo certbot certonly --webroot -w /opt/gify/certbot/www \
 6. 解开 `nginx-gateway.conf` 中两个 443 块的注释，续期挂 hook 并 reload：
 
 ```bash
-sudo certbot renew --deploy-hook \
-  "docker compose -f /opt/gify/docker-compose.yml exec gateway nginx -s reload"
-docker compose exec gateway nginx -s reload
+sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-gateway.sh <<'EOF'
+#!/bin/sh
+docker compose -f /opt/gify/docker-compose.yml exec gateway nginx -s reload
+EOF
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-gateway.sh
+docker compose up -d --force-recreate gateway
 ```
+
+续期钩子放在 `/etc/letsencrypt/renewal-hooks/deploy/` 目录（certbot 的 systemd timer 每天自动续期时会执行目录内脚本）；命令行传 `--deploy-hook` 只对当次生效，不持久。
+
+**手改入口配置的注意**：该文件以单文件方式挂载进容器，`sed -i` 等原地替换会产生新 inode，容器仍看到旧内容且 `docker compose up -d` 不会重建——每次修改后必须 `docker compose up -d --force-recreate gateway`。
 
 Cloudflare 代理（Origin Rules 端口改写）作为备选入口保留可行性：需要时放开 app、frontend 端口映射并配置 CF 即可，gateway 不冲突。
 
