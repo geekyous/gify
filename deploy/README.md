@@ -28,6 +28,8 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
 访问入口（gateway 容器，宿主机 80 与 443，TLS 终结、按域名分流）：
   https://test.gify.<域名>     → frontend 容器（静态资源）
   https://test.api.<域名>     → app 容器（API）
+
+第二份前端部署在 Cloudflare Pages（独立构建同一份代码），见“第二份前端”一节。
 ```
 
 镜像以 git 短 sha 作版本号，同时更新 latest 标签；`gify-app` 与 `gify-frontend` 存放在同一命名空间下。
@@ -132,6 +134,30 @@ ACR_PASSWORD=<固定密码>
 1. 向 main 推送一次提交，观察 Actions 从检查到部署全部通过。
 2. `curl https://test.api.<域名>/api/health` 应返回 `{"code":0,...}`。
 3. 浏览器打开 `https://test.gify.<域名>`，用初始管理员登录并修改密码。
+
+### 第二份前端（Cloudflare Pages）
+
+前端另有一份部署在 Cloudflare Pages，连接 GitHub 仓库自动构建，与服务器上的 frontend 容器互为独立副本。首次配置（Dashboard → Workers & Pages → Create → Pages → Connect to Git，选中本仓库）：
+
+| 配置项 | 值 |
+|---|---|
+| Production branch | `main` |
+| Root directory | `frontend` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| 环境变量 | `VITE_API_BASE_URL`（与 GitHub variable `API_BASE_URL` 同值）；`NODE_VERSION` = `22` |
+
+构建配置与 CI 镜像构建相互独立：Pages 只负责这份静态副本，检查与测试仍由 Actions 负责。
+
+绑定自定义域（必须）：Pages 项目 → Custom domains → 添加 `test.web.<域名>`，CNAME 记录由 Cloudflare 自动创建。**不要用 `*.pages.dev` 默认域**——它与 API 不在同一注册域，`lax` cookie 不会随请求携带，登录无法工作。
+
+服务器 `.env` 的 `CORS_ORIGINS` 需追加该域名：
+
+```
+CORS_ORIGINS=https://test.gify.<域名>,https://test.web.<域名>
+```
+
+改后 `docker compose up -d app` 重建 app 容器生效。
 
 ### 发版与回滚
 
