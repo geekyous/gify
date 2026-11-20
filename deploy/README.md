@@ -128,6 +128,7 @@ ACR_PASSWORD=<固定密码>
 前端与 API 同注册域，`COOKIE_SAMESITE` 保持默认 `lax` 即可；`ENV=prod` 使会话 cookie 带 Secure。`APP_PORT` 与 `FRONTEND_PORT` 仅绑定 127.0.0.1，供本地排障与 Cloudflare 备选入口使用。
 
 3. 防火墙只放行 80 与 443。app、frontend、postgres、redis 均只绑定 127.0.0.1，不对外。
+4. SSH 关闭密码登录（公网机器 22 端口持续被爆破）：确认密钥登录可用后，在 `/etc/ssh/sshd_config` 设 `PasswordAuthentication no` 并 `systemctl restart ssh`。
 
 **验证**
 
