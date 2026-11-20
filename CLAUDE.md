@@ -1,6 +1,6 @@
 # Gify
 
-内网部署的轻量 AI Agent 平台。单人开发，20–50 人使用。三角色：管理员（admin）/ Agent 负责人（builder）/ 普通用户（user）。
+云端部署的轻量 AI Agent 平台。单人开发，20–50 人使用。三角色：管理员（admin）/ Agent 负责人（builder）/ 普通用户（user）。
 
 ## 必读文档
 

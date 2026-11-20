@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 版本 | v1.16（2026-11） |
+| 版本 | v1.17（2026-11） |
 | 适用范围 | backend、frontend、deploy |
 
 ## 1. 总则
@@ -23,7 +23,7 @@
 3. 方法语义固定：GET 查询、POST 创建、PUT 全量更新、PATCH 局部更新、DELETE 删除。
 4. 子资源层级不超过两层：`/api/agents/{id}/tools` 允许，更深层级改用查询参数。
 5. SSE 接口路径以 `/stream` 结尾，如 `/api/conversations/{id}/stream`。
-6. 不做 API 版本号（内网单实例部署，前端与后端同仓同步发布）。
+6. 不做 API 版本号（单实例部署，前端与后端同仓同步发布）。
 
 ### 2.2 请求参数
 
@@ -397,7 +397,7 @@ frontend/src/
 
 1. 提交前必须通过：后端 lint 与全部测试；前端 lint 与构建（含类型检查）。
 2. 当前栈命令：后端 `uv run ruff check . && uv run pytest`；前端 `npm run lint && npm run build`。
-3. CI 在 GitHub Actions 执行同一套检查（`.github/workflows/ci.yml`，含 pgvector 与 redis 服务容器）；push main 在检查通过后自动部署测试环境，内网生产升级仍走 `deploy/upgrade.sh` 手动流程；纯文档推送（`paths-ignore`：`docs/**`、`**.md`）不触发流水线。
+3. CI 在 GitHub Actions 执行同一套检查（`.github/workflows/ci.yml`，含 pgvector 与 redis 服务容器）；push main 在检查通过后自动部署测试环境，生产升级仍走 `deploy/upgrade.sh` 手动流程；纯文档推送（`paths-ignore`：`docs/**`、`**.md`）不触发流水线。
 4. 禁止提交：`.env`、`node_modules/`、`.venv/`、`dist/`、数据库文件。
 
 ## 9. 测试与完成定义

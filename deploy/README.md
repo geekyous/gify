@@ -4,7 +4,7 @@ Compose 五容器：gateway（入口 nginx，TLS 与域名分流）、frontend�
 
 两种部署形态都用 Actions 构建并存放在阿里云 ACR 的镜像，服务器上不做构建：
 
-| | 测试环境（云服务器） | 生产（内网） |
+| | 测试环境（云服务器） | 生产（云服务器） |
 |---|---|---|
 | 发版 | push main 自动部署 | 手动执行 upgrade.sh |
 | 版本 | 跟随 main | 指定 git sha，便于回滚 |
@@ -169,15 +169,15 @@ cd /opt/gify
 TAG=<commit sha> sh deploy.sh
 ```
 
-## 生产部署（内网）
+## 生产部署（云服务器）
 
-生产与测试用同一套镜像，差异只在发版方式：生产手动指定版本，升级前备份。内网机器需要能访问 ACR 拉取镜像；完全隔离的网络用本节末尾的离线导入。
+生产与测试用同一套镜像与入口形态，差异只在发版方式：生产手动指定版本，升级前备份。云服务器可访问 ACR 拉取镜像；地域选大陆需域名 ICP 备案（见测试环境一节的教训），海外地域（如香港）无此要求。
 
 ### 初装
 
 1. 安装 Docker，创建部署目录（如 `/opt/gify`），放入 `docker-compose.yml`、`deploy.sh`、`upgrade.sh` 三个文件。
 2. 执行一次 `docker login <ACR 地址>`，凭据会写入 `~/.docker/config.json`。
-3. 写 `.env`，项与测试环境相同，地址换内网实际值；前端与 API 若在同一注册域，`COOKIE_SAMESITE` 用 `lax` 即可。
+3. 写 `.env`，项与测试环境相同，地址换生产实际值；前端与 API 若在同一注册域，`COOKIE_SAMESITE` 用 `lax` 即可。
 4. `TAG=<版本号，如 v0.3.0> sh deploy.sh`。
 
 完成后浏览器打开 `http://<主机>:${FRONTEND_PORT}`，用初始管理员账号登录，首次登录强制改密。
@@ -195,24 +195,6 @@ upgrade.sh 先做备份确认（pg_dump），确认后执行与 deploy.sh 相同
 ```bash
 docker compose exec -T postgres psql -U gify \
   -c "ALTER USER gify WITH PASSWORD '新口令';"
-```
-
-### 离线导入镜像
-
-不能访问 ACR 的机器，在有网的机器上导出镜像文件再拷贝过去：
-
-```bash
-docker pull <ACR 地址>/<命名空间>/gify-app:<sha>
-docker save <ACR 地址>/<命名空间>/gify-app:<sha> | gzip > gify-app-<sha>.tar.gz
-# 拷贝到内网机器后
-docker load < gify-app-<sha>.tar.gz
-```
-
-frontend 镜像同样处理。导入后跳过 deploy.sh 的 pull，直接执行迁移与重启：
-
-```bash
-TAG=<sha> docker compose run --rm app uv run alembic upgrade head
-TAG=<sha> docker compose up -d --no-build
 ```
 
 ## 备份与恢复
