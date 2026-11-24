@@ -48,6 +48,14 @@ Actions：lint 与测试 → 构建镜像 → 推送 ACR
 2. Repository 级配置（Settings → Secrets and variables → Actions）：secrets 添加 `ACR_REGISTRY`、`ACR_NAMESPACE`、`ACR_USERNAME`、`ACR_PASSWORD`；Variables 添加 `API_BASE_URL`（测试 API 地址，如 `https://api.example.com`）与 `PROD_API_BASE_URL`（生产 API 地址，正式版镜像构建时注入）。
 3. 部署环境（Settings → Environments）：新建 `test`，Required reviewers 勾审批人——部署任务在此暂停等批准；环境 secrets 添加 `TEST_SSH_HOST`、`TEST_SSH_USER`、`TEST_SSH_KEY`。
 
+**团队协作**
+
+1. 成员：Settings → Collaborators → 添加（Write 权限）；Admin 仅管理员。
+2. 分支保护：Settings → Branches → Add rule → Branch name pattern `main`：Require a pull request before merging（Required approvals = 1，勾选 Require review from Code Owners 可选）、Require status checks to pass（选 CI 的 backend 与 frontend job）、勾选 Require branches to be up to date。
+3. 合并方式：Settings → General → Pull Requests 只保留 **Rebase and merge**，禁用其余三项，避免产生合并提交破坏线性历史。
+4. 部署审批：Environments → `test` → Required reviewers 增加需要参与部署决策的成员。
+5. 每位成员用自己的 SSH 密钥登录服务器；CI 部署密钥独立，不共享。
+
 **部署密钥**
 
 CI 登录服务器用专用密钥，与个人密钥分离、可单独吊销。私钥必须**无口令**（CI 非交互环境无法解密带口令的私钥，会报 `error in libcrypto`）：
